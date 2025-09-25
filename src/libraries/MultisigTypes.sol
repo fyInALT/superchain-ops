@@ -41,7 +41,8 @@ struct StateInfo {
 enum TaskType {
     L2TaskBase,
     SimpleTaskBase,
-    OPCMTaskBase
+    OPCMTaskBase,
+    JsonTxsExecutorTaskBase
 }
 
 /// @notice Struct to store information about a L2 chain
