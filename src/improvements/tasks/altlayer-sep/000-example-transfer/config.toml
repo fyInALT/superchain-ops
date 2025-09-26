@@ -1,0 +1,12 @@
+l2chains = [
+    {name = "testnet-203", chainId = 77117}
+]
+fallbackAddressesJsonPath = "src/improvements/tasks/altlayer-sep/000-example-transfer/addresses.json"
+
+templateName = "JsonTxsExecutorExample"
+
+txsJsonPath = "src/improvements/tasks/altlayer-sep/000-example-transfer/txs.json"
+
+[addresses]
+
+[stateOverrides]
