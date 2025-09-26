@@ -79,7 +79,7 @@ abstract contract JsonTxsExecutorTaskBase is L2TaskBase {
     /// @notice Get the calldata to be executed by the root safe.
     /// This function uses aggregate3 instead of aggregate3Value because OPCM tasks use Multicall3DelegateCall.
     function _getMulticall3Calldata(Action[] memory actions) internal pure override returns (bytes memory data) {
-        (address[] memory targets, uint256[] memory _, bytes[] memory arguments) = processTaskActions(actions);
+        (address[] memory targets, , bytes[] memory arguments) = processTaskActions(actions);
     
         IMulticall3.Call3[] memory calls = new IMulticall3.Call3[](targets.length);
 
