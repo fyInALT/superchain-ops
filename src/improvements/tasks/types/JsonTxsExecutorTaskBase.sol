@@ -21,11 +21,8 @@ abstract contract JsonTxsExecutorTaskBase is L2TaskBase {
     using stdToml for string;
     using StdStyle for string;
 
-    /// @notice Optimism Contracts Manager Multicall3DelegateCall contract reference
-    address public constant MULTICALL3_DELEGATECALL_ADDRESS = 0x93dc480940585D9961bfcEab58124fFD3d60f76a;
-
-    mapping(uint256 => IMulticall3.Call3) private idxToCall;
-    uint256 txsCount;
+    mapping(uint256 => IMulticall3.Call3) private idxToTxCall;
+    uint256 private txCallsCount;
 
     /// @notice Returns the type of task. JsonTxsExecutorTaskBase.
     /// Overrides the taskType function in the MultisigTask contract.
@@ -43,11 +40,7 @@ abstract contract JsonTxsExecutorTaskBase is L2TaskBase {
     /// @notice Configures the task for JsonTxsExecutorTaskBase type tasks.
     /// Overrides the configureTask function in the MultisigTask contract.
     /// For JsonTxsExecutorTaskBase, we need to configure the simple address registry.
-    function _configureTask(
-        string memory taskConfigFilePath
-    )
-        internal
-        override
+    function _configureTask(string memory taskConfigFilePath) internal override
         returns (
             AddressRegistry addrRegistry_,
             IGnosisSafe parentMultisig_,
@@ -55,7 +48,8 @@ abstract contract JsonTxsExecutorTaskBase is L2TaskBase {
         )
     {
         // The only thing we change is overriding the multicall target.
-        (addrRegistry_, parentMultisig_, multicallTarget_) = super._configureTask(taskConfigFilePath);
+        (addrRegistry_, parentMultisig_, multicallTarget_) = super
+            ._configureTask(taskConfigFilePath);
 
         string memory toml = vm.readFile(taskConfigFilePath);
         string memory txsJsonPath = toml.readStringOr(".txsJsonPath", "");
@@ -65,17 +59,13 @@ abstract contract JsonTxsExecutorTaskBase is L2TaskBase {
     }
 
     function _build(address rootSafe) internal override {
-        console.log("rootSafe %s", rootSafe);
-    
-        for (uint256 i = 0; i < txsCount; i++) {
-            _callMC3(idxToCall[i]);
+        for (uint256 i = 0; i < txCallsCount; i++) {
+            _runCall3(idxToTxCall[i]);
         }
     }
 
-    function _callMC3(IMulticall3.Call3 memory call3) internal {
-        (bool success, ) =  address(call3.target).call(
-            call3.callData
-        );
+    function _runCall3(IMulticall3.Call3 memory call3) internal {
+        (bool success, ) = address(call3.target).call(call3.callData);
         require(success, "call tx in txs from json failed");
     }
 
@@ -89,24 +79,28 @@ abstract contract JsonTxsExecutorTaskBase is L2TaskBase {
     /// @notice Get the calldata to be executed by the root safe.
     /// This function uses aggregate3 instead of aggregate3Value because OPCM tasks use Multicall3DelegateCall.
     function _getMulticall3Calldata(Action[] memory actions) internal pure override returns (bytes memory data) {
-        (address[] memory targets,, bytes[] memory arguments) = processTaskActions(actions);
+        (address[] memory targets, uint256[] memory _, bytes[] memory arguments) = processTaskActions(actions);
+    
         IMulticall3.Call3[] memory calls = new IMulticall3.Call3[](targets.length);
 
         for (uint256 i; i < calls.length; i++) {
             require(targets[i] != address(0), "Invalid target for multisig");
-            calls[i] = IMulticall3.Call3({target: targets[i], allowFailure: false, callData: arguments[i]});
+            calls[i] = IMulticall3.Call3({
+                target: targets[i],
+                allowFailure: false,
+                callData: arguments[i]
+            });
         }
 
         data = abi.encodeCall(IMulticall3.aggregate3, (calls));
     }
 
     /// @notice this function must be overridden in the inheriting contract to run assertions on the state changes.
-    function _validate(VmSafe.AccountAccess[] memory accountAccesses, Action[] memory actions, address rootSafe)
-        internal
-        view
-        virtual
-        override
-    {
+    function _validate(
+        VmSafe.AccountAccess[] memory accountAccesses,
+        Action[] memory actions,
+        address rootSafe
+    ) internal view virtual override {
         accountAccesses; // No-ops to silence unused variable compiler warnings.
         actions;
         rootSafe;
@@ -125,45 +119,28 @@ abstract contract JsonTxsExecutorTaskBase is L2TaskBase {
                 "supported, to support it, simply bump the value of "
                 "MAX_LENGTH_SUPPORTED to a bigger one."
             );
+
             try
                 vm.parseJsonAddress(
                     jsonContent,
-                    string(
-                        abi.encodePacked(
-                            "$.transactions[",
-                            vm.toString(i),
-                            "].to"
-                        )
-                    )
+                    string(abi.encodePacked("$.transactions[",vm.toString(i),"].to"))
                 )
             returns (address) {} catch {
                 transaction_count = i;
             }
         }
 
-        txsCount = transaction_count;
+        txCallsCount = transaction_count;
         for (uint256 i = 0; i < transaction_count; i++) {
-            idxToCall[i] = IMulticall3.Call3({
+            idxToTxCall[i] = IMulticall3.Call3({
                 target: stdJson.readAddress(
                     jsonContent,
-                    string(
-                        abi.encodePacked(
-                            "$.transactions[",
-                            vm.toString(i),
-                            "].to"
-                        )
-                    )
+                    string(abi.encodePacked("$.transactions[",vm.toString(i),"].to"))
                 ),
                 allowFailure: false,
                 callData: stdJson.readBytes(
                     jsonContent,
-                    string(
-                        abi.encodePacked(
-                            "$.transactions[",
-                            vm.toString(i),
-                            "].data"
-                        )
-                    )
+                    string(abi.encodePacked("$.transactions[",vm.toString(i),"].data"))
                 )
             });
         }
