@@ -16,6 +16,13 @@ contract JsonTxsExecutorExample is JsonTxsExecutorTaskBase {
     using stdToml for string;
     using LibString for string;
 
+    /// @notice Returns the parent multisig address string identifier
+    /// the parent multisig address should be same for all the l2chains in the task
+    /// @return The string "ProxyAdminOwner"
+    function safeAddressString() public pure override returns (string memory) {
+        return "ProxyAdminOwner";
+    }
+
     /// @notice Returns the storage write permissions required for this task.
     function _taskStorageWrites() internal view virtual override returns (string[] memory) {
         string[] memory storageWrites = new string[](7);
@@ -32,7 +39,7 @@ contract JsonTxsExecutorExample is JsonTxsExecutorTaskBase {
     /// @notice Override to return a list of addresses that should not be checked for code length.
     function _getCodeExceptions() internal pure override returns (address[] memory) {
         address[] memory codeExceptions = new address[](4);
-        codeExceptions[0] = 0x2775E29cAE1a4C8B09419ba6E1A96fc48E9AacE1;
+        codeExceptions[0] = address(uint160(0x0000000000000000000000002775E29cAE1a4C8B09419ba6E1A96fc48E9AacE1));
         codeExceptions[1] = address(uint160(0x000000000000000000000000376faed5d58f70807efaa47fc24ea489a65d6897));
         codeExceptions[2] = address(uint160(0x000000000000000000000000cf5d8c6e6f4f04e64662dfe3bfa8bb7450f775b4));
         codeExceptions[3] = address(uint160(0x000000000000000000000000ff00000000000000000000000000000000012d3d));

@@ -30,13 +30,6 @@ abstract contract JsonTxsExecutorTaskBase is L2TaskBase {
         return TaskType.JsonTxsExecutorTaskBase;
     }
 
-    /// @notice Returns the parent multisig address string identifier
-    /// the parent multisig address should be same for all the l2chains in the task
-    /// @return The string "ProxyAdminOwner"
-    function safeAddressString() public pure override returns (string memory) {
-        return "ProxyAdminOwner";
-    }
-
     /// @notice Configures the task for JsonTxsExecutorTaskBase type tasks.
     /// Overrides the configureTask function in the MultisigTask contract.
     /// For JsonTxsExecutorTaskBase, we need to configure the simple address registry.
@@ -48,8 +41,7 @@ abstract contract JsonTxsExecutorTaskBase is L2TaskBase {
         )
     {
         // The only thing we change is overriding the multicall target.
-        (addrRegistry_, parentMultisig_, multicallTarget_) = super
-            ._configureTask(taskConfigFilePath);
+        (addrRegistry_, parentMultisig_, multicallTarget_) = super._configureTask(taskConfigFilePath);
 
         string memory toml = vm.readFile(taskConfigFilePath);
         string memory txsJsonPath = toml.readStringOr(".txsJsonPath", "");
