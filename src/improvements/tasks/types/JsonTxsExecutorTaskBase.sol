@@ -50,7 +50,7 @@ abstract contract JsonTxsExecutorTaskBase is L2TaskBase {
         _buildCallsFromJson(json);
     }
 
-    function _build(address rootSafe) internal override {
+    function _build(address) internal override {
         for (uint256 i = 0; i < txCallsCount; i++) {
             _runCall3(idxToTxCall[i]);
         }
